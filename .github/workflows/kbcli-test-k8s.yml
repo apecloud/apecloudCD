@@ -3,14 +3,18 @@ name: Kbcli Test on K8S
 on:
   workflow_dispatch:
     inputs:
+      CLUSTER_NAME:
+        description: 'k8s cluster name'
+        required: true
+        default: ''
       CLOUD_PROVIDER:
-        description: 'cloud k8s cluster provider (e.g. vke/eks/gke/aks)'
+        description: 'cloud k8s cluster provider (e.g. eks/gke/aks)'
         required: false
-        default: 'vke'
+        default: 'eks'
       KB_VERSION:
         description: 'kubeblocks release version'
         required: false
-        default: 'latest'
+        default: 'v0.8.4'
       KB_PRE_VERSION:
         description: 'kubeblocks previous version of upgrade'
         type: string
@@ -18,25 +22,17 @@ on:
         default: ''
       TEST_TYPE:
         description: 'test type (e.g. apecloud-mysql|postgresql|redis|mongodb|kafka|pulsar|mysqlscale|weaviate|qdrant|smartengine|
-        greptimedb|nebula|risingwave|starrocks|etcd|oceanbase|foxlake|orioledb|official-pg|asmysql|openldap|
+        greptimedb|nebula|risingwave|starrocks|etcd|oceanbase|foxlake|orioledb|oracle-mysql|official-pg|asmysql|openldap|
         polardbx|opensearch|elasticsearch|vllm|tdengine|milvus|clickhouse|pika|ggml|zookeeper|mariadb|tidb|xinference|
-        oracle|opengauss|influxdb|flink|solr|mogdb|oceanbase-ent|starrocks-ent|apecloud-postgresql|yashandb|
-        redis-cluster|camellia-redis-proxy|dmdb|minio|orchestrator)'
+        oracle|opengauss|influxdb|flink|solr|doris|halo|mogdb|oceanbase-ent|starrocks-ent|apecloud-postgresql|yashandb|
+        redis-cluster|camellia-redis-proxy|dmdb|minio)'
         type: string
         required: false
         default: ''
-      CLUSTER_VERSION:
-        description: 'k8s cluster version (e.g. 1.28)'
-        required: false
-        default: '1.28'
       REGION:
         description: 'k8s region name'
         required: false
-        default: 'cn-shanghai'
-      INSTANCE_TYPE:
-        description: 'node instance types (e.g. amd64/arm64)'
-        required: false
-        default: 'amd64'
+        default: 'ap-northwest-1'
       BRANCH_NAME:
         description: 'testinfra branch name'
         required: false
@@ -48,14 +44,14 @@ on:
       ARGS:
         description: "Test args"
         required: false
-        default: ''
+        default: '--only-cluster true --random-suffix cluster --random-namespace false --check-addon false'
   workflow_call:
     inputs:
       CLOUD_PROVIDER:
         description: 'cloud k8s cluster provider'
         type: string
         required: false
-        default: 'vke'
+        default: 'eks'
       KB_VERSION:
         description: 'kubeblocks release version'
         type: string
@@ -102,7 +98,7 @@ on:
         required: false
         default: ''
 
-run-name: kbcli:${{ inputs.KB_PRE_VERSION }} to ${{ inputs.KB_VERSION }} ${{ inputs.CLOUD_PROVIDER }}:${{ inputs.CLUSTER_VERSION }}:${{ inputs.INSTANCE_TYPE }} ${{ inputs.TEST_TYPE }}
+run-name: kbcli:${{ inputs.KB_PRE_VERSION }} to ${{ inputs.KB_VERSION }} ${{ inputs.CLOUD_PROVIDER }}:${{ inputs.CLUSTER_NAME }} ${{ inputs.TEST_TYPE }}
 
 env:
   GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
@@ -112,24 +108,12 @@ permissions:
   contents: read
 
 jobs:
-  test-playground:
-    if: ${{ inputs.TEST_TYPE == '' && inputs.KB_PRE_VERSION == '' && inputs.CLOUD_PROVIDER != 'vke' }}
-    uses: ./.github/workflows/test-kbcli.yml
-    with:
-      cloud-provider: ${{ inputs.CLOUD_PROVIDER }}
-      region: ${{ inputs.REGION }}
-      release-version: "${{ inputs.KB_VERSION }}"
-      test-type: "4"
-      test-type-name: "playground"
-      test-args: "${{ inputs.ARGS }}"
-      branch-name: ${{ inputs.BRANCH_NAME }}
-    secrets: inherit
-
   terraform-init-k8s:
     uses: ./.github/workflows/terraform-init.yml
     with:
       test-type: ${{ inputs.TEST_TYPE }}
       cloud-provider: ${{ inputs.CLOUD_PROVIDER }}
+      cluster-name: ${{ inputs.CLUSTER_NAME }}
       cluster-version: ${{ inputs.CLUSTER_VERSION }}
       instance-type: ${{ inputs.INSTANCE_TYPE }}
       artifact-name: cicd-${{ inputs.CLOUD_PROVIDER }}-${{ github.sha }}
@@ -855,23 +839,23 @@ jobs:
       random-suffix: ${{ needs.test-kubeblocks.outputs.random-suffix }}
     secrets: inherit
 
-#  test-halo:
-#    if: ${{ needs.terraform-init-k8s.result == 'success' && always() && (inputs.TEST_TYPE == '' || contains(inputs.TEST_TYPE, 'halo')) && ! contains(inputs.KB_VERSION, 'v0.5.') && ! contains(inputs.KB_VERSION, 'v0.6.') && ! contains(inputs.KB_VERSION, 'v0.7.') && ! contains(inputs.KB_VERSION, 'v0.8.') && ! contains(inputs.KB_VERSION, 'v1.0.') }}
-#    needs: [ terraform-init-k8s, test-kubeblocks ]
-#    uses: ./.github/workflows/test-kbcli.yml
-#    with:
-#      cloud-provider: ${{ inputs.CLOUD_PROVIDER }}
-#      region: ${{ inputs.REGION }}
-#      release-version: "${{ inputs.KB_VERSION }}"
-#      previous-version: "${{ inputs.KB_PRE_VERSION }}"
-#      test-type: "42"
-#      test-type-name: "halo"
-#      test-args: "${{ inputs.ARGS }}"
-#      k8s-cluster-name: ${{ needs.terraform-init-k8s.outputs.k8s-cluster-name }}
-#      artifact-name: cicd-${{ inputs.CLOUD_PROVIDER }}-${{ github.sha }}
-#      branch-name: ${{ inputs.BRANCH_NAME }}
-#      random-suffix: ${{ needs.test-kubeblocks.outputs.random-suffix }}
-#    secrets: inherit
+  #  test-halo:
+  #    if: ${{ needs.terraform-init-k8s.result == 'success' && always() && (inputs.TEST_TYPE == '' || contains(inputs.TEST_TYPE, 'halo')) && ! contains(inputs.KB_VERSION, 'v0.5.') && ! contains(inputs.KB_VERSION, 'v0.6.') && ! contains(inputs.KB_VERSION, 'v0.7.') && ! contains(inputs.KB_VERSION, 'v0.8.') && ! contains(inputs.KB_VERSION, 'v1.0.') }}
+  #    needs: [ terraform-init-k8s, test-kubeblocks ]
+  #    uses: ./.github/workflows/test-kbcli.yml
+  #    with:
+  #      cloud-provider: ${{ inputs.CLOUD_PROVIDER }}
+  #      region: ${{ inputs.REGION }}
+  #      release-version: "${{ inputs.KB_VERSION }}"
+  #      previous-version: "${{ inputs.KB_PRE_VERSION }}"
+  #      test-type: "42"
+  #      test-type-name: "halo"
+  #      test-args: "${{ inputs.ARGS }}"
+  #      k8s-cluster-name: ${{ needs.terraform-init-k8s.outputs.k8s-cluster-name }}
+  #      artifact-name: cicd-${{ inputs.CLOUD_PROVIDER }}-${{ github.sha }}
+  #      branch-name: ${{ inputs.BRANCH_NAME }}
+  #      random-suffix: ${{ needs.test-kubeblocks.outputs.random-suffix }}
+  #    secrets: inherit
 
   test-mogdb:
     if: ${{ needs.terraform-init-k8s.result == 'success' && always() && (inputs.TEST_TYPE == '' || contains(inputs.TEST_TYPE, 'mogdb')) && ! contains(inputs.KB_VERSION, 'v0.5.') && ! contains(inputs.KB_VERSION, 'v0.6.') && ! contains(inputs.KB_VERSION, 'v0.7.') }}
@@ -1111,31 +1095,31 @@ jobs:
                   echo "${{ needs.test-kafka.outputs.test-result-report }}" >> ${test_result_report_output_file_log}
                   echo ""  >> ${test_result_report_output_file_log}
               fi
-              
+          
               if [[ "${{ inputs.TEST_TYPE }}" == '' || "${{ inputs.TEST_TYPE }}" == *"pulsar|"* || "${{ inputs.TEST_TYPE }}" == *"pulsar" ]]; then
                   TEST_RESULT="${TEST_RESULT}##pulsar|${{ needs.test-pulsar.outputs.test-result }}"
                   echo "${{ needs.test-pulsar.outputs.test-result-report }}" >> ${test_result_report_output_file_log}
                   echo ""  >> ${test_result_report_output_file_log}
               fi
-              
+          
               if [[ "${{ inputs.TEST_TYPE }}" == '' || "${{ inputs.TEST_TYPE }}" == *"mysqlscale"* ]]; then
                   TEST_RESULT="${TEST_RESULT}##mysqlscale|${{ needs.test-mysqlscale.outputs.test-result }}"
                   echo "${{ needs.test-mysqlscale.outputs.test-result-report }}" >> ${test_result_report_output_file_log}
                   echo ""  >> ${test_result_report_output_file_log}
               fi
-              
+          
               if [[ "${{ inputs.TEST_TYPE }}" == '' || "${{ inputs.TEST_TYPE }}" == *"weaviate"* ]]; then
                   TEST_RESULT="${TEST_RESULT}##weaviate|${{ needs.test-weaviate.outputs.test-result }}"
                   echo "${{ needs.test-weaviate.outputs.test-result-report }}" >> ${test_result_report_output_file_log}
                   echo ""  >> ${test_result_report_output_file_log}
               fi
-              
+          
               if [[ "${{ inputs.TEST_TYPE }}" == '' || "${{ inputs.TEST_TYPE }}" == *"qdrant"* ]]; then
                   TEST_RESULT="${TEST_RESULT}##qdrant|${{ needs.test-qdrant.outputs.test-result }}"
                   echo "${{ needs.test-qdrant.outputs.test-result-report }}" >> ${test_result_report_output_file_log}
                   echo ""  >> ${test_result_report_output_file_log}
               fi
-              
+          
               if [[ "${{ inputs.TEST_TYPE }}" == '' || "${{ inputs.TEST_TYPE }}" == *"smartengine"* ]]; then
                   TEST_RESULT="${TEST_RESULT}##smartengine|${{ needs.test-smartengine.outputs.test-result }}"
                   echo "${{ needs.test-smartengine.outputs.test-result-report }}" >> ${test_result_report_output_file_log}
@@ -1179,13 +1163,13 @@ jobs:
                   echo "${{ needs.test-oceanbase.outputs.test-result-report }}" >> ${test_result_report_output_file_log}
                   echo ""  >> ${test_result_report_output_file_log}
               fi
-             
+          
               if [[ "${{ inputs.TEST_TYPE }}" == '' || "${{ inputs.TEST_TYPE }}" == *"foxlake"* ]]; then
                   TEST_RESULT="${TEST_RESULT}##foxlake|${{ needs.test-foxlake.outputs.test-result }}"
                   echo "${{ needs.test-foxlake.outputs.test-result-report }}" >> ${test_result_report_output_file_log}
                   echo ""  >> ${test_result_report_output_file_log}
               fi
-            
+          
               if [[ "${{ inputs.TEST_TYPE }}" == '' || "${{ inputs.TEST_TYPE }}" == *"asmysql"* ]]; then
                   TEST_RESULT="${TEST_RESULT}##asmysql|${{ needs.test-asmysql.outputs.test-result }}"
                   echo "${{ needs.test-asmysql.outputs.test-result-report }}" >> ${test_result_report_output_file_log}
@@ -1245,7 +1229,7 @@ jobs:
                   echo "${{ needs.test-vllm.outputs.test-result-report }}" >> ${test_result_report_output_file_log}
                   echo ""  >> ${test_result_report_output_file_log}
               fi    
-             
+          
               if [[ "${{ inputs.TEST_TYPE }}" == '' || "${{ inputs.TEST_TYPE }}" == *"orioledb"* ]]; then
                   TEST_RESULT="${TEST_RESULT}##orioledb|${{ needs.test-orioledb.outputs.test-result }}"
                   echo "${{ needs.test-orioledb.outputs.test-result-report }}" >> ${test_result_report_output_file_log}
@@ -1364,13 +1348,13 @@ jobs:
                   echo "${{ needs.test-yashandb.outputs.test-result-report }}" >> ${test_result_report_output_file_log}
                   echo ""  >> ${test_result_report_output_file_log}
               fi 
-              
+          
               if [[ "${{ inputs.TEST_TYPE }}" == '' || "${{ inputs.TEST_TYPE }}" == *"dmdb"* ]]; then
                   TEST_RESULT="${TEST_RESULT}##dmdb|${{ needs.test-dmdb.outputs.test-result }}"
                   echo "${{ needs.test-dmdb.outputs.test-result-report }}" >> ${test_result_report_output_file_log}
                   echo ""  >> ${test_result_report_output_file_log}
               fi 
-              
+          
               if [[ "${{ inputs.TEST_TYPE }}" == '' || "${{ inputs.TEST_TYPE }}" == *"minio"* ]]; then
                   TEST_RESULT="${TEST_RESULT}##minio|${{ needs.test-minio.outputs.test-result }}"
                   echo "${{ needs.test-minio.outputs.test-result-report }}" >> ${test_result_report_output_file_log}
@@ -1402,13 +1386,3 @@ jobs:
               --url ${{ vars.TEST_BOT_WEBHOOK }} \
               --title "$test_title" \
               --result "$TEST_RESULT"
-
-  terraform-destroy-k8s:
-    if: ${{ always() }}
-    needs: [ terraform-init-k8s, send-message ]
-    uses: ./.github/workflows/terraform-destroy.yml
-    with:
-      cloud-provider: ${{ inputs.CLOUD_PROVIDER }}
-      artifact-name: cicd-${{ inputs.CLOUD_PROVIDER }}-${{ github.sha }}
-      region: ${{ inputs.REGION }}
-    secrets: inherit
