@@ -10,11 +10,11 @@ on:
       CLOUD_PROVIDER:
         description: 'cloud k8s cluster provider (e.g. eks/gke/aks)'
         required: false
-        default: 'gke'
+        default: 'eks'
       KB_VERSION:
         description: 'kubeblocks release version'
         required: false
-        default: 'latest'
+        default: 'v0.8.3'
       KB_PRE_VERSION:
         description: 'kubeblocks previous version of upgrade'
         type: string
@@ -32,7 +32,7 @@ on:
       REGION:
         description: 'k8s region name'
         required: false
-        default: 'us-central1'
+        default: 'us-west-2'
       BRANCH_NAME:
         description: 'testinfra branch name'
         required: false
@@ -44,7 +44,7 @@ on:
       ARGS:
         description: "Test args"
         required: false
-        default: ''
+        default: '--only-cluster true --random-suffix cluster --random-namespace false --check-addon false'
   workflow_call:
     inputs:
       CLOUD_PROVIDER:
