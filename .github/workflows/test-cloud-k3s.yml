@@ -99,20 +99,6 @@ jobs:
           github-token: ${{ env.GITHUB_TOKEN }}
           k3d-args: --no-lb --k3s-node-label topology.hostpath.csi/node=k3d-${{ env.K3D_NAME }}-server-0@server:0
 
-      - name: install kubbelocks
-        run: |
-          echo E2E_TEST_RESULT=0 >> $GITHUB_ENV
-          cd testinfra
-          KB_VERSION=$( bash .github/utils/get_kb_latest_version.sh "${{ inputs.kubeblocks-version }}" )
-          echo KUBEBLOCKS_VERSION=${KB_VERSION} >> $GITHUB_ENV
-          
-          bash .github/utils/kbcli-test.sh \
-              --type "0" \
-              --kubeblocks-version "${KB_VERSION}" \
-              --cloud-provider "k3s" \
-              --args "--config-s3 true --enable-csi-hostpath-driver false --check-addon false --namespace kubeblocks-cloud --random-namespace false --upgrade true ${{ inputs.test-args }} " \
-              --region "${{ env.REGION }}"
-
       - name: Checkout apecloud Code
         uses: actions/checkout@v4
         with:

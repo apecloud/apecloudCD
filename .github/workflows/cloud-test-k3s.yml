@@ -74,7 +74,7 @@ on:
         description: 'e2etest branch name'
         type: string
         required: false
-        default: 'main'
+        default: 'test-ci'
       APECD_REF:
         description: "The branch name of apecloud-cd"
         type: string
@@ -131,24 +131,24 @@ jobs:
           path: ./
           ref: ${{ inputs.APECD_REF }}
 
-      - name: send message
-        id: get_trigger_mode
-        run: |
-          TEST_RESULT="deploy-cloud|${{ needs.e2e-test.outputs.deploy-result }}"
-          TEST_RESULT="${TEST_RESULT}##e2e-test|${{ needs.e2e-test.outputs.test-result }}"
+      # - name: send message
+      #   id: get_trigger_mode
+      #   run: |
+      #     TEST_RESULT="deploy-cloud|${{ needs.e2e-test.outputs.deploy-result }}"
+      #     TEST_RESULT="${TEST_RESULT}##e2e-test|${{ needs.e2e-test.outputs.test-result }}"
           
-          TEST_RESULT=$( bash .github/utils/utils.sh --type 12 \
-              --github-repo "${{ github.repository }}" \
-              --github-token "${{ env.GITHUB_TOKEN }}" \
-              --test-result "${TEST_RESULT}" \
-              --run-id "$GITHUB_RUN_ID" )
+      #     TEST_RESULT=$( bash .github/utils/utils.sh --type 12 \
+      #         --github-repo "${{ github.repository }}" \
+      #         --github-token "${{ env.GITHUB_TOKEN }}" \
+      #         --test-result "${TEST_RESULT}" \
+      #         --run-id "$GITHUB_RUN_ID" )
           
-          date_ret=$(date +%Y-%m-%d-%T)
-          test_title="[${{ inputs.APECLOUD_VERSION }}] Test ApeCloud on K3S:${{ inputs.K3S_VERSION }} [${date_ret}]"
-          python3 .github/utils/send_mesage.py \
-              --url ${{ vars.TEST_BOT_WEBHOOK }} \
-              --title "$test_title" \
-              --result "$TEST_RESULT"
+      #     date_ret=$(date +%Y-%m-%d-%T)
+      #     test_title="[${{ inputs.APECLOUD_VERSION }}] Test ApeCloud on K3S:${{ inputs.K3S_VERSION }} [${date_ret}]"
+      #     python3 .github/utils/send_mesage.py \
+      #         --url ${{ vars.TEST_BOT_WEBHOOK }} \
+      #         --title "$test_title" \
+      #         --result "$TEST_RESULT"
 
   disable-gke-runner:
     if: ${{ always() }}
