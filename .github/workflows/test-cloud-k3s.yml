@@ -134,49 +134,6 @@ jobs:
           ref: ${{ inputs.apecloud-branch }}
           token: ${{ env.GITHUB_TOKEN }}
 
-      - name: run cloud server
-        run: |
-          cd apecloud/apiserver
-          export GOPROXY=http://goproxy.cn 
-          go mod tidy
-          touch ./cn.env
-          echo "${{ env.CLOUD_CN_ENV }}" > ./cn.env
-          while IFS='=' read -r name value; do
-               if [[ ! $name =~ ^\# && -n $name ]]; then
-                   export $name="$value"
-               fi
-          done < ./cn.env
-          echo $DSN
-          nohup make run > ./make_run.log 2>&1 &
-          times=1
-          while true; do
-              if [[ $times -gt 300 ]]; then
-                  break
-              fi
-              run_ret="$( grep "Listen and Server on 0.0.0.0:8080" ./make_run.log || true )"
-              if [[ -n "$run_ret" ]]; then
-                  echo "run cloud server success"
-                  break
-              fi
-              times=$(( $times + 1 ))
-              sleep 1
-              echo "checking cloud server..."
-          done
-          cat ./make_run.log
-
-      - name: initial postgresql configuration
-        run: |
-          cd testinfra
-          bash .github/utils/kbcli-test.sh \
-              --type "2" \
-              --kubeblocks-version "${KUBEBLOCKS_VERSION}" \
-              --args "--cluster-name apecloud-pg --replicas 1 --limit-cpu 1 --limit-memory 1 --storage 40 --cluster-version postgresql-14.8.0 --namespace kubeblocks-cloud --only-cluster true --test-mode apecloud ${{ inputs.test-args }} " \
-              --region "${{ env.REGION }}"
-
-      - name: curl cloud server api
-        run: |
-          curl -X GET "http://127.0.0.1:8080/api/v1/user" -H  "accept: application/json" -H  "authorization:Bearer  ${AUTH0_ID_TOKEN}"
-
       - name: Checkout e2etest Code
         uses: actions/checkout@v4
         with:
@@ -185,6 +142,11 @@ jobs:
           ref: ${{ inputs.e2etest-branch }}
           token: ${{ env.GITHUB_TOKEN }}
 
+      - name: run cloud installer
+        run: |
+          cd e2etest
+          make cloud-installer
+          
       - name: run e2e test
         id: run_e2e_test
         run: |
