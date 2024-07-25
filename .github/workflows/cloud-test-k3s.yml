@@ -32,7 +32,7 @@ on:
         description: 'e2etest branch name'
         type: string
         required: false
-        default: 'main'
+        default: 'test-ci'
       APECD_REF:
         description: "The branch name of apecloud-cd"
         type: string
