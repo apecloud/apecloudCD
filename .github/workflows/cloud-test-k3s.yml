@@ -98,7 +98,7 @@ permissions:
 
 jobs:
   enable-gke-runner:
-    uses: ./.github/workflows/enable-gke-runner.yml
+    uses: ./.github/workflows/enable-gke-runner.yml@tesi-ci # test
     with:
       GITHUB_REPO: "${{ github.repository }}"
       RUNNER_NAMESPACE: "default"
@@ -107,7 +107,7 @@ jobs:
 
   e2e-test:
     needs: [ enable-gke-runner ]
-    uses: ./.github/workflows/test-cloud-k3s.yml
+    uses: ./.github/workflows/test-cloud-k3s.yml@test-ci # test
     with:
       release-version: ${{ inputs.APECLOUD_VERSION }}
       kubeblocks-version: ${{ inputs.KUBEBLOCKS_VERSION }}
