@@ -32,7 +32,7 @@ on:
       REGION:
         description: 'k8s region name'
         required: false
-        default: 'ap-northwest-1'
+        default: 'ap-northeast-1'
       BRANCH_NAME:
         description: 'testinfra branch name'
         required: false
