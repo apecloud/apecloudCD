@@ -1690,15 +1690,15 @@ jobs:
               done
           fi
 
-  terraform-destroy-k8s:
-    if: ${{ always() }}
-    needs: [ terraform-init-k8s, send-message ]
-    uses: ./.github/workflows/terraform-destroy.yml
-    with:
-      cloud-provider: ${{ inputs.CLOUD_PROVIDER }}
-      artifact-name: cicd-${{ inputs.CLOUD_PROVIDER }}-${{ github.sha }}
-      region: ${{ inputs.REGION }}
-    secrets: inherit
+#  terraform-destroy-k8s:
+#    if: ${{ always() }}
+#    needs: [ terraform-init-k8s, send-message ]
+#    uses: ./.github/workflows/terraform-destroy.yml
+#    with:
+#      cloud-provider: ${{ inputs.CLOUD_PROVIDER }}
+#      artifact-name: cicd-${{ inputs.CLOUD_PROVIDER }}-${{ github.sha }}
+#      region: ${{ inputs.REGION }}
+#    secrets: inherit
     
   upload-test-report:
     if: ${{ always() }}
